@@ -1242,7 +1242,12 @@ fn enum_name(msg: &Message, signal: &Signal) -> String {
 }
 
 fn enum_variant_name(x: &str) -> String {
-    if keywords::is_keyword(x) || !x.starts_with(|c: char| c.is_ascii_alphabetic()) {
+    let x = x
+        .replace('+', "Plus")
+        .replace('-', "Minus")
+        .replace('±', "PlusMinus");
+
+    if keywords::is_keyword(&x) || !x.starts_with(|c: char| c.is_ascii_alphabetic()) {
         format!("X{}", x.to_pascal_case())
     } else {
         x.to_pascal_case()
