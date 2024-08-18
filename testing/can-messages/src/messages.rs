@@ -41,6 +41,8 @@ pub enum Messages {
     NegativeFactorTest(NegativeFactorTest),
     /// LargerIntsWithOffsets
     LargerIntsWithOffsets(LargerIntsWithOffsets),
+    /// LargeIntIsF64
+    LargeIntIsF64(LargeIntIsF64),
     /// MsgWithoutSignals
     MsgWithoutSignals(MsgWithoutSignals),
     /// TruncatedBeSignal
@@ -71,6 +73,7 @@ impl Messages {
             LargerIntsWithOffsets::MESSAGE_ID => {
                 Messages::LargerIntsWithOffsets(LargerIntsWithOffsets::try_from(payload)?)
             }
+            LargeIntIsF64::MESSAGE_ID => Messages::LargeIntIsF64(LargeIntIsF64::try_from(payload)?),
             MsgWithoutSignals::MESSAGE_ID => {
                 Messages::MsgWithoutSignals(MsgWithoutSignals::try_from(payload)?)
             }
@@ -2567,6 +2570,155 @@ impl<'a> Arbitrary<'a> for LargerIntsWithOffsets {
         let twelve = u.int_in_range(-1000..=3000)?;
         let sixteen = u.int_in_range(-1000..=64535)?;
         LargerIntsWithOffsets::new(twelve, sixteen).map_err(|_| arbitrary::Error::IncorrectFormat)
+    }
+}
+
+/// LargeIntIsF64
+///
+/// - Standard ID: 1339 (0x53b)
+/// - Size: 8 bytes
+/// - Transmitter: Sit
+#[derive(Clone, Copy)]
+pub struct LargeIntIsF64 {
+    raw: [u8; 8],
+}
+
+impl LargeIntIsF64 {
+    pub const MESSAGE_ID: embedded_can::Id =
+        Id::Standard(unsafe { StandardId::new_unchecked(0x53b) });
+
+    pub const FLOAT_MIN: f32 = -340000000000000000000000000000000000000_f32;
+    pub const FLOAT_MAX: f32 = 340000000000000000000000000000000000000_f32;
+
+    /// Construct new LargeIntIsF64 from values
+    pub fn new(float: f32) -> Result<Self, CanError> {
+        let mut res = Self { raw: [0u8; 8] };
+        res.set_float(float)?;
+        Ok(res)
+    }
+
+    /// Access message payload raw value
+    pub fn raw(&self) -> &[u8; 8] {
+        &self.raw
+    }
+
+    /// Float
+    ///
+    /// - Min: -340000000000000000000000000000000000000
+    /// - Max: 340000000000000000000000000000000000000
+    /// - Unit: ""
+    /// - Receivers: XXX
+    #[inline(always)]
+    pub fn float(&self) -> f32 {
+        self.float_raw()
+    }
+
+    /// Get raw value of Float
+    ///
+    /// - Start bit: 7
+    /// - Signal size: 64 bits
+    /// - Factor: 1
+    /// - Offset: 0
+    /// - Byte order: BigEndian
+    /// - Value type: Unsigned
+    #[inline(always)]
+    pub fn float_raw(&self) -> f32 {
+        let signal = self.raw.view_bits::<Msb0>()[0..64].load_be::<u64>();
+
+        let factor = 1_f32;
+        let offset = 0_f32;
+        (signal as f32) * factor + offset
+    }
+
+    /// Set value of Float
+    #[inline(always)]
+    pub fn set_float(&mut self, value: f32) -> Result<(), CanError> {
+        if value < -340000000000000000000000000000000000000_f32
+            || 340000000000000000000000000000000000000_f32 < value
+        {
+            return Err(CanError::ParameterOutOfRange {
+                message_id: LargeIntIsF64::MESSAGE_ID,
+            });
+        }
+        let factor = 1_f32;
+        let offset = 0_f32;
+        let value = ((value - offset) / factor) as u64;
+
+        self.raw.view_bits_mut::<Msb0>()[0..64].store_be(value);
+        Ok(())
+    }
+}
+
+impl core::convert::TryFrom<&[u8]> for LargeIntIsF64 {
+    type Error = CanError;
+
+    #[inline(always)]
+    fn try_from(payload: &[u8]) -> Result<Self, Self::Error> {
+        if payload.len() != 8 {
+            return Err(CanError::InvalidPayloadSize);
+        }
+        let mut raw = [0u8; 8];
+        raw.copy_from_slice(&payload[..8]);
+        Ok(Self { raw })
+    }
+}
+
+impl embedded_can::Frame for LargeIntIsF64 {
+    fn new(id: impl Into<Id>, data: &[u8]) -> Option<Self> {
+        if id.into() != Self::MESSAGE_ID {
+            None
+        } else {
+            data.try_into().ok()
+        }
+    }
+
+    fn new_remote(_id: impl Into<Id>, _dlc: usize) -> Option<Self> {
+        unimplemented!()
+    }
+
+    fn is_extended(&self) -> bool {
+        match self.id() {
+            Id::Standard(_) => false,
+            Id::Extended(_) => true,
+        }
+    }
+
+    fn is_remote_frame(&self) -> bool {
+        false
+    }
+
+    fn id(&self) -> Id {
+        Self::MESSAGE_ID
+    }
+
+    fn dlc(&self) -> usize {
+        self.raw.len()
+    }
+
+    fn data(&self) -> &[u8] {
+        &self.raw
+    }
+}
+impl core::fmt::Debug for LargeIntIsF64 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        if f.alternate() {
+            f.debug_struct("LargeIntIsF64")
+                .field("float", &self.float())
+                .finish()
+        } else {
+            f.debug_tuple("LargeIntIsF64").field(&self.raw).finish()
+        }
+    }
+}
+
+#[cfg(feature = "arb")]
+impl<'a> Arbitrary<'a> for LargeIntIsF64 {
+    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self, arbitrary::Error> {
+        let float = u.float_in_range(
+            -340000000000000000000000000000000000000_f32
+                ..=340000000000000000000000000000000000000_f32,
+        )?;
+        LargeIntIsF64::new(float).map_err(|_| arbitrary::Error::IncorrectFormat)
     }
 }
 

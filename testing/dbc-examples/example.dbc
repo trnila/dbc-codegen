@@ -55,6 +55,9 @@ BO_ 1338 LargerIntsWithOffsets: 8 Sit
  SG_ Twelve : 0|12@1+ (1,-1000) [-1000|3000] "" XXX
  SG_ Sixteen : 12|16@1+ (1,-1000) [-1000|64535] "" XXX
 
+BO_ 1339 LargeIntIsF64: 8 Sit
+ SG_ Float : 7|64@0+ (1,0) [-3.4E+038|3.4E+038] "" XXX
+
 BO_ 513 MsgWithoutSignals: 8 Ipsum
 
 BO_ 9001 TruncatedBeSignal: 8 Ipsum
@@ -65,6 +68,7 @@ BO_ 9002 TruncatedLeSignal: 8 Ipsum
 
 BO_ 2147488308 MsgExtendedId: 8 Sit
  SG_ Dummy : 15|2@0+ (1,0) [0|3] "" XXX
+
 
 VAL_ 512 Three 0 "OFF" 1 "ON" 2 "ONER" 3 "ONEST";
 VAL_ 512 Four 0 "Off" 1 "On" 2 "Oner" 3 "Onest";

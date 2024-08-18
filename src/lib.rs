@@ -1198,7 +1198,10 @@ fn signal_to_rust_uint(signal: &Signal) -> String {
 
 #[allow(clippy::float_cmp)]
 fn signal_is_float_in_rust(signal: &Signal) -> bool {
-    signal.offset.fract() != 0.0 || signal.factor.fract() != 0.0
+    signal.offset.fract() != 0.0
+        || signal.factor.fract() != 0.0
+        || signal.min < (i128::MIN as f64)
+        || signal.max > (i128::MAX as f64)
 }
 
 fn signal_to_rust_type(signal: &Signal) -> String {
