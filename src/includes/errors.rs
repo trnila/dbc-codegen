@@ -8,6 +8,8 @@ pub enum CanError {
         message_id: embedded_can::Id,
     },
     InvalidPayloadSize,
+
+    #[allow(dead_code)]
     /// Multiplexor value not defined in the dbc
     InvalidMultiplexor {
         /// dbc message id

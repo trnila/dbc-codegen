@@ -140,8 +140,10 @@ pub fn codegen(config: Config<'_>, out: impl Write) -> Result<()> {
     )?;
     writeln!(&mut w, "// Version: {}", dbc.version.0)?;
     writeln!(&mut w)?;
+    writeln!(&mut w, "#[allow(unused_imports)]")?;
     writeln!(&mut w, "use core::ops::BitOr;")?;
     writeln!(&mut w, "use bitvec::prelude::*;")?;
+    writeln!(&mut w, "#[allow(unused_imports)]")?;
     writeln!(&mut w, "use embedded_can::{{Id, StandardId, ExtendedId}};")?;
 
     config.impl_arbitrary.fmt_cfg(&mut w, |w| {
